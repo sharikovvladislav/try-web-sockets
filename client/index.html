@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My chat!</title>
+</head>
+<body>
+<div id="container"></div>
+<div id="footer">
+  <textarea id="text"></textarea><button id="button">Send text</button>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", ready);
+
+  const username = prompt('Введите имя');
+
+  function ready () {
+    const textarea = document.getElementById('text'),
+      container = document.getElementById('container'),
+      button = document.getElementById('button');
+
+    container.appendText = function (text) {
+      container.innerHTML += '<p>'+text+'</p>'
+    };
+
+    container.appendText('Hello, ' + username + '!');
+
+    const connection = createWsConnection();
+
+    button.addEventListener('click', function () {
+      connection.send(textarea.value);
+      textarea.value = '';
+    });
+
+    function createWsConnection () {
+      let connection = new WebSocket("ws://localhost:8001");
+      connection.onopen = function() {
+        console.log("Соединение установлено.");
+        connection.send(username)
+      };
+
+      connection.onclose = function(event) {
+        if (event.wasClean) {
+          console.log('Соединение закрыто чисто');
+        } else {
+          console.error('Обрыв соединения'); // например, "убит" процесс сервера
+        }
+        console.debug('Код: ' + event.code + ' причина: ' + event.reason);
+      };
+
+      connection.onmessage = function(event) {
+        container.appendText(event.data);
+      };
+
+      connection.onerror = function(error) {
+        console.error("Ошибка " + error.message);
+      };
+      return connection;
+    }
+  }
+</script>
+</body>
+</html>
